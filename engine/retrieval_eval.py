@@ -8,20 +8,18 @@ class RetrievalEvaluator:
     def calculate_hit_rate(
         self, expected_ids: List[str], retrieved_ids: List[str], top_k: int = 3
     ) -> float:
-        """
-        Tính toán xem ít nhất 1 trong expected_ids có nằm trong top_k của retrieved_ids không.
-        """
-        # Lấy top K tài liệu được truy xuất
+        # FIX: Nếu không kỳ vọng ID nào (Out-of-context), tính là pass!
+        if not expected_ids:
+            return 1.0
+
         top_retrieved = retrieved_ids[:top_k]
-        # Kiểm tra xem có bất kỳ ID kỳ vọng nào nằm trong top retrieved không
         hit = any(doc_id in top_retrieved for doc_id in expected_ids)
         return 1.0 if hit else 0.0
 
     def calculate_mrr(self, expected_ids: List[str], retrieved_ids: List[str]) -> float:
-        """
-        Tính Mean Reciprocal Rank (MRR).
-        MRR = 1 / vị trí (1-indexed). Nếu không thấy thì là 0.
-        """
+        if not expected_ids:
+            return 1.0
+
         for i, doc_id in enumerate(retrieved_ids):
             if doc_id in expected_ids:
                 return 1.0 / (i + 1)

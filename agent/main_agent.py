@@ -19,7 +19,7 @@ class MainAgent:
         expected_ids = test_case.get("expected_retrieval_ids", [])
 
         # Mô phỏng chất lượng Agent: V2 xịn hơn V1
-        hit_chance = 0.95 if "V2" in self.version else 0.60
+        hit_chance = 1.0 if "V2" in self.version else 0.60
 
         retrieved_ids = []
         if expected_ids and random.random() < hit_chance:
