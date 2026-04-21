@@ -34,6 +34,9 @@ async def run_benchmark_with_results(agent_version: str, dataset: list):
             / len(results)
             if results
             else 0,
+            "mrr": sum(r["ragas"]["retrieval"]["mrr"] for r in results) / len(results)
+            if results
+            else 0,
             "agreement_rate": sum(r["judge"]["agreement_rate"] for r in results)
             / len(results)
             if results
@@ -66,6 +69,7 @@ async def main():
     print(f"V2 Avg Score: {v2_summary['metrics']['avg_score']:.2f}")
     print(f"Delta: {'+' if delta >= 0 else ''}{delta:.2f}")
     print(f"V2 Hit Rate: {v2_summary['metrics']['hit_rate']:.2f}")
+    print(f"V2 MRR: {v2_summary['metrics']['mrr']:.2f}")
     print(f"V2 Agreement Rate: {v2_summary['metrics']['agreement_rate']:.2f}")
     print(f"Total Eval Cost: ${v2_summary['metrics']['total_cost']:.4f}")
 
