@@ -2,13 +2,13 @@
   "metadata": {
     "version": "V2",
     "total": 50,
-    "timestamp": "2026-04-21 11:10:03"
+    "timestamp": "2026-04-21 14:58:51"
   },
   "metrics": {
-    "avg_score": 4.44,
+    "avg_score": 4.52,
     "hit_rate": 1.0,
-    "mrr": 0.86,
-    "agreement_rate": 0.924,
-    "total_cost": 0.00150555
+    "mrr": 0.81,
+    "agreement_rate": 0.934,
+    "total_cost": 0.00150765
   }
 }

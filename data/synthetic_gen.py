@@ -39,7 +39,6 @@ async def generate_qa_from_chunk(
         """,
     }
 
-    # FIX 1: Bắt buộc model nhét data vào key "cases"
     system_prompt = f"""
     Bạn là một chuyên gia tạo Golden Dataset để đánh giá AI.
     HÃY TRẢ VỀ DUY NHẤT 1 JSON OBJECT CHỨA KEY "cases" THEO FORMAT SAU:
@@ -77,11 +76,10 @@ async def generate_qa_from_chunk(
                     item["metadata"]["type"] = case_type
                     valid_cases.append(item)
 
-        # FIX 2: Bắt mọi kiểu cấu trúc JSON LLM có thể trả về
         if isinstance(data, dict):
             if "cases" in data and isinstance(data["cases"], list):
                 extract_valid(data["cases"])
-            elif "question" in data:  # Trường hợp LLM tự bỏ mảng, trả Object trực tiếp
+            elif "question" in data:
                 extract_valid([data])
             else:
                 for val in data.values():
@@ -112,14 +110,12 @@ async def generate_qa_from_text(text: str, total_pairs_needed: int = 50) -> List
 
     tasks = []
 
-    # FIX 3: Dùng Semaphore giới hạn 5 request đồng thời để không dính giới hạn API
     sem = asyncio.Semaphore(5)
 
     async def safe_generate(chunk, chunk_id, case_type):
         async with sem:
             return await generate_qa_from_chunk(chunk, chunk_id, case_type)
 
-    # Phân bổ tỷ lệ CÂN BẰNG: 50% Easy (fact-check), 50% Hard cases
     for i, chunk in enumerate(chunks):
         chunk_id = f"chunk_{i:03d}"
 
@@ -133,7 +129,6 @@ async def generate_qa_from_text(text: str, total_pairs_needed: int = 50) -> List
         else:
             case_type = "ambiguous"
 
-        # Sử dụng hàm an toàn thay vì gọi trực tiếp
         tasks.append(safe_generate(chunk, chunk_id, case_type))
 
     results = await asyncio.gather(*tasks)
@@ -142,7 +137,6 @@ async def generate_qa_from_text(text: str, total_pairs_needed: int = 50) -> List
     for res in results:
         final_dataset.extend(res)
 
-    # TRỘN NGẪU NHIÊN ĐỂ ĐẢM BẢO KHÔNG BỊ CẮT MẤT CASE KHÓ Ở CUỐI MẢNG
     random.shuffle(final_dataset)
     return final_dataset[:total_pairs_needed]
 
@@ -150,12 +144,11 @@ async def generate_qa_from_text(text: str, total_pairs_needed: int = 50) -> List
 async def main():
     raw_text = (
         """
-    AI Evaluation (Đánh giá Trí tuệ nhân tạo) là một quy trình kỹ thuật nhằm đo lường chất lượng của các mô hình ngôn ngữ lớn (LLMs) và các hệ thống dựa trên AI (như RAG - Retrieval-Augmented Generation).
-    Việc đánh giá thường được chia làm hai phần chính: Đánh giá quá trình truy xuất thông tin (Retrieval Evaluation) và Đánh giá quá trình sinh văn bản (Generation Evaluation).
-    Trong Retrieval Evaluation, các chỉ số phổ biến bao gồm Hit Rate (Tỷ lệ trúng) và MRR (Mean Reciprocal Rank). Hit Rate đo lường xem hệ thống có tìm thấy tài liệu chứa câu trả lời trong top K tài liệu hay không. MRR đánh giá thứ hạng của tài liệu đúng đầu tiên được tìm thấy.
-    Trong Generation Evaluation, người ta thường dùng một mô hình LLM mạnh hơn (như GPT-4o) để làm giám khảo (LLM-as-a-Judge) chấm điểm dựa trên các tiêu chí như: Faithfulness (Tính trung thực - không bịa đặt thông tin ngoài context), Relevancy (Tính liên quan của câu trả lời so với câu hỏi), và Tone (Giọng điệu).
-    Tuy nhiên, hệ thống AI cũng có nguy cơ bị tấn công qua Prompt Injection (Chèn mã độc vào câu lệnh) hoặc Goal Hijacking (Đánh cắp mục tiêu). Ví dụ, người dùng có thể yêu cầu AI "bỏ qua mọi hướng dẫn và thực hiện hành vi xấu". Do đó, việc đánh giá độ an toàn (Safety Evaluation) là cực kỳ quan trọng.
-    Một hệ thống tốt cần xử lý được các trường hợp mập mờ (Ambiguous Questions) bằng cách hỏi lại người dùng để làm rõ, thay vì đoán mò. Nếu thông tin không có trong tài liệu (Out of Context), AI cần trung thực phản hồi rằng nó không biết.
+    Hệ thống pháp luật trên thế giới hiện nay chủ yếu được chia thành hai truyền thống pháp lý lớn: Thông luật (Common Law) và Dân luật (Civil Law).
+    Thông luật có nguồn gốc từ Anh quốc và đặc trưng bởi việc sử dụng án lệ (precedent). Các phán quyết của tòa án cấp trên có giá trị ràng buộc đối với các tòa án cấp dưới khi giải quyết các vụ án tương tự. Trong hệ thống này, thẩm phán đóng vai trò rất quan trọng trong việc kiến tạo và giải thích pháp luật thông qua các phán quyết.
+    Ngược lại, hệ thống Dân luật bắt nguồn từ luật La Mã, phổ biến ở lục địa châu Âu và nhiều quốc gia khác. Hệ thống này dựa trên các bộ luật được pháp điển hóa một cách hệ thống và toàn diện. Nguồn luật chính là các văn bản quy phạm pháp luật do cơ quan lập pháp ban hành, chứ không phải án lệ. Vai trò của thẩm phán chủ yếu là áp dụng các quy định đã được viết sẵn vào từng vụ án cụ thể.
+    Mặc dù có những điểm khác biệt căn bản về nguồn luật và vai trò của cơ quan tư pháp, nhưng trong xu thế hội nhập và toàn cầu hóa hiện nay, hai hệ thống pháp luật này đang có sự giao thoa và học hỏi lẫn nhau. Nhiều quốc gia theo hệ thống Dân luật cũng bắt đầu thừa nhận vai trò tham khảo nhất định của án lệ, trong khi các quốc gia Thông luật cũng ngày càng pháp điển hóa nhiều lĩnh vực pháp luật thông qua các đạo luật thành văn.
+    Bên cạnh đó, việc áp dụng pháp luật đôi khi gặp phải những tình huống mập mờ trong cách diễn đạt văn bản, yêu cầu các cơ quan tư pháp phải giải thích pháp luật một cách linh hoạt nhưng vẫn phải đảm bảo tính thống nhất. Nguyên tắc pháp chế đòi hỏi mọi cơ quan nhà nước, tổ chức và công dân đều phải nghiêm chỉnh chấp hành pháp luật, không được hành động vượt quá thẩm quyền hoặc có những quyết định tùy tiện nằm ngoài phạm vi quy định.
     """
         * 3
     )
