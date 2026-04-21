@@ -30,7 +30,9 @@
 
 5. **Why 4:** Tại sao thiếu khả năng bóc tách? Vì hệ thống chưa có bước tiền xử lý (Intent Routing/Parsing) để lọc bỏ các yêu cầu độc hại/ngoài lề trước khi đưa vào LLM sinh văn bản.
 
-6. **Root Cause:** Xung đột giữa chỉ thị "Không Hallucinate" và khả năng xử lý truy vấn phức hợp (Multi-part). Agent thà hy sinh tính hữu ích (Helpfulness) để bảo vệ tính trung thực (Faithfulness).
+6. **Why 5:** Tại sao hệ thống chưa có bước tiền xử lý này? Vì thiết kế ban đầu chỉ tập trung vào tối ưu luồng RAG cơ bản (Hit Rate/MRR) mà chưa dự trù đến các kịch bản bị tấn công (Adversarial Attacks/Prompt Injection).
+
+7. **Root Cause:** Xung đột giữa chỉ thị "Không Hallucinate" và khả năng xử lý truy vấn phức hợp (Multi-part). Agent thà hy sinh tính hữu ích (Helpfulness) để bảo vệ tính trung thực (Faithfulness).
 
 #### Case #2: Thiếu chi tiết dẫn đến bất đồng giám khảo cực độ (Tie-breaker)
 1. **Symptom:** Với câu hỏi "Tại sao việc đánh giá độ an toàn là quan trọng?", Agent chỉ trả lời ngắn gọn "Theo thông tin tôi tìm được: Việc đánh giá độ an toàn là cực kỳ quan trọng." GPT-Mini chấm 5 điểm, nhưng GPT-4o chấm 1 điểm.
@@ -43,7 +45,9 @@
 
 5. **Why 4:** Tại sao Prompt chưa chặt chẽ? Vì thiếu yêu cầu bắt buộc LLM phải giải thích chi tiết khi gặp câu hỏi "Tại sao" (Why-questions).
 
-6. **Root Cause:** System Prompt cho bước Generation thiếu chỉ dẫn về "Độ chi tiết/Comprehensiveness", khiến LLM sinh ra câu trả lời hời hợt, không đáp ứng được tiêu chuẩn khắt khe của mô hình giám khảo lớn (GPT-4o).
+6. **Why 5:** Tại sao lại thiếu yêu cầu này? Vì khi xây dựng System Prompt, nhóm chỉ chú trọng vào việc chống "ảo giác" (dựa sát vào context) mà quên mất tiêu chí về "độ chi tiết" (Comprehensiveness) để đáp ứng Giám khảo khó tính như GPT-4o.
+
+7. **Root Cause:** System Prompt cho bước Generation thiếu chỉ dẫn về "Độ chi tiết/Comprehensiveness", khiến LLM sinh ra câu trả lời hời hợt, không đáp ứng được tiêu chuẩn khắt khe của mô hình giám khảo lớn (GPT-4o).
 
 ### Case #3: Lỗi Goal Hijacking với khái niệm cụ thể
 
@@ -57,7 +61,9 @@
 
 5. **Why 4:** Tại sao lại thiết kế "All or Nothing"? Do chưa dự liệu đến các kịch bản Red Teaming / Adversarial Attacks tinh vi.
 
-6. **Root Cause:** Hệ thống thiếu cơ chế Input Guardrails chuyên biệt để nhận diện và loại bỏ các Prompt Injection/Goal Hijacking, dẫn đến việc Agent tự làm tê liệt khả năng trả lời các phần hợp lệ của câu hỏi.
+6. **Why 5:** Tại sao Guardrail lại hoạt động cứng nhắc như vậy ở pha Generation? Vì Guardrail hiện tại chỉ kiểm tra đầu ra cuối cùng, thay vì bóc tách và phân loại intent của người dùng ngay từ đầu vào.
+
+7. **Root Cause:** Hệ thống thiếu cơ chế Input Guardrails chuyên biệt để nhận diện và loại bỏ các Prompt Injection/Goal Hijacking, dẫn đến việc Agent tự làm tê liệt khả năng trả lời các phần hợp lệ của câu hỏi.
 
 ## 4. Kế hoạch cải tiến (Action Plan)
 - [ ] Bổ sung Input Guardrails: Thêm một lớp phân loại (Classifier LLM hoặc Rule-based) trước pha Retrieval để lọc bỏ các câu lệnh như "Bỏ qua mọi hướng dẫn" hoặc tách phần hỏi chính đáng ra khỏi phần injection.
